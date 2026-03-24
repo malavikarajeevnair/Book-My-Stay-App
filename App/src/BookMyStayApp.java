@@ -1,16 +1,17 @@
+import java.io.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Project: BookMyStay - Concurrent Edition
- * Goal: Demonstrate Thread-Safety and Synchronization in a Hotel Domain.
+ * Project: BookMyStay - Durable & Concurrent Edition
+ * Goal: Demonstrate Persistence (Durable State) and Thread-Safety.
  */
 
-// 1. THE SHARED RESOURCE: Thread-Safe Room Inventory
-class RoomInventory {
-    // ConcurrentHashMap provides thread-safe bucket access
+// 1. THE DURABLE RESOURCE: Must implement Serializable
+class RoomInventory implements Serializable {
+    private static final long serialVersionUID = 1L; // Version control for serialization
+
+    // Use a Map to store room counts
     private Map<String, Integer> inventory = new ConcurrentHashMap<>();
 
     public void registerRoomType(String type, int count) {
@@ -18,20 +19,12 @@ class RoomInventory {
     }
 
     /**
-     * CRITICAL SECTION:
-     * The 'synchronized' keyword ensures that only one thread can
-     * check availability and decrement the count at any given time.
+     * Synchronized to prevent race conditions during concurrent bookings.
      */
     public synchronized boolean bookRoom(String type, String guestName) {
         int currentCount = inventory.getOrDefault(type, 0);
-
-        System.out.println("[Checking] " + guestName + " sees " + currentCount + " " + type + " rooms.");
-
         if (currentCount > 0) {
-            // Artificial delay to simulate network latency or database processing
-            // This exposes race conditions if 'synchronized' is removed!
-            try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-
+            System.out.println("[Process] " + guestName + " is securing 1 " + type + " room...");
             inventory.put(type, currentCount - 1);
             return true;
         }
@@ -43,21 +36,31 @@ class RoomInventory {
     }
 }
 
-// 2. THE ACTOR: Concurrent Booking Request (Runnable)
-class BookingRequest implements Runnable {
-    private String guestName;
-    private String roomType;
-    private RoomInventory inventory;
+// 2. THE PERSISTENCE SERVICE: Handles Disk I/O
+class PersistenceService {
+    private static final String FILE_NAME = "hotel_state.ser";
 
-    public BookingRequest(String name, String type, RoomInventory inv) {
-        this.guestName = name;
-        this.roomType = type;
-        this.inventory = inv;
+    public void save(RoomInventory data) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            oos.writeObject(data);
+            System.out.println(">>> [STORAGE] System state saved to " + FILE_NAME);
+        } catch (IOException e) {
+            System.err.println("Save Error: " + e.getMessage());
+        }
     }
 
-    @Override
-    public void run() {
-        if (inventory.bookRoom(roomType, guestName)) {
-            System.out.println(">>> [SUCCESS] " + guestName + " successfully booked the " + roomType + " room!");
-        } else {
-            System.out.println("XXX [FAILED] " + guestName + " - Sorry, " + roomType +
+    public RoomInventory load() {
+        File file = new File(FILE_NAME);
+        if (!file.exists()) return null;
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            return (RoomInventory) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Load Error: " + e.getMessage());
+            return null;
+        }
+    }
+}
+
+// 3. THE MAIN APPLICATION
+public class Book
