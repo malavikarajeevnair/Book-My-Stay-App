@@ -1,19 +1,38 @@
-// Abstract class defining the core properties of any Hotel Room
-abstract class Room {
-    protected String roomType;
-    protected double pricePerNight;
-    protected boolean isAvailable;
+import java.util.HashMap;
+import java.util.Map;
 
-    public Room(String roomType, double pricePerNight, boolean isAvailable) {
-        this.roomType = roomType;
-        this.pricePerNight = pricePerNight;
-        this.isAvailable = isAvailable;
+/**
+ * Manager class responsible for centralized state management.
+ * Uses HashMap for O(1) retrieval of room counts.
+ */
+class RoomInventory {
+    // Key: Room Type (String) | Value: Count (Integer)
+    private HashMap<String, Integer> inventory;
+
+    public RoomInventory() {
+        this.inventory = new HashMap<>();
     }
 
-    // Abstract method: Every subclass must implement its own description
-    public abstract void displayDetails();
+    // Register room types and their initial counts
+    public void registerRoomType(String type, int initialCount) {
+        inventory.put(type, initialCount);
+    }
 
-    public String getAvailabilityStatus() {
-        return isAvailable ? "Available" : "Occupied";
+    // Controlled update: Reduce count when a booking happens
+    public boolean bookRoom(String type) {
+        if (inventory.containsKey(type) && inventory.get(type) > 0) {
+            inventory.put(type, inventory.get(type) - 1);
+            return true;
+        }
+        return false;
+    }
+
+    // Display current state
+    public void displayInventory() {
+        System.out.println("--- Current Room Inventory Status ---");
+        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
+            System.out.println("Room: " + entry.getKey() + " | Available: " + entry.getValue());
+        }
+        System.out.println("-------------------------------------");
     }
 }
