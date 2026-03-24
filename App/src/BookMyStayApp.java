@@ -1,41 +1,19 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 /**
- * Search Service: Handles read-only access to room data.
- * Does not modify the inventory state.
+ * Represents a guest's intent to book a room.
  */
-class RoomSearchService {
-    private RoomInventory inventory;
-    private Map<String, Room> roomTemplates; // Stores room details (Price, Description)
+class Reservation {
+    private String guestName;
+    private String roomType;
+    private long timestamp;
 
-    public RoomSearchService(RoomInventory inventory, Map<String, Room> roomTemplates) {
-        this.inventory = inventory;
-        this.roomTemplates = roomTemplates;
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+        this.timestamp = System.currentTimeMillis(); // Capture arrival order
     }
 
-    /**
-     * Finds and displays only the rooms that have a count > 0.
-     */
-    public void searchAvailableRooms() {
-        System.out.println("\n--- Searching for Available Rooms ---");
-        boolean found = false;
-
-        // Iterate through the inventory to find available types
-        for (String type : inventory.getAllRoomTypes()) {
-            int count = inventory.getAvailableCount(type);
-
-            if (count > 0) {
-                Room details = roomTemplates.get(type);
-                System.out.println("-> " + type + " | Price: $" + details.pricePerNight +
-                        " | Left: " + count + " | " + details.getAvailabilityStatus());
-                found = true;
-            }
-        }
-
-        if (!found) {
-            System.out.println("Sorry, no rooms are currently available.");
-        }
+    @Override
+    public String toString() {
+        return "Reservation [Guest: " + guestName + " | Room: " + roomType + "]";
     }
 }
