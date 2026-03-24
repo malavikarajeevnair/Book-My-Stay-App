@@ -1,38 +1,41 @@
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Manager class responsible for centralized state management.
- * Uses HashMap for O(1) retrieval of room counts.
+ * Search Service: Handles read-only access to room data.
+ * Does not modify the inventory state.
  */
-class RoomInventory {
-    // Key: Room Type (String) | Value: Count (Integer)
-    private HashMap<String, Integer> inventory;
+class RoomSearchService {
+    private RoomInventory inventory;
+    private Map<String, Room> roomTemplates; // Stores room details (Price, Description)
 
-    public RoomInventory() {
-        this.inventory = new HashMap<>();
+    public RoomSearchService(RoomInventory inventory, Map<String, Room> roomTemplates) {
+        this.inventory = inventory;
+        this.roomTemplates = roomTemplates;
     }
 
-    // Register room types and their initial counts
-    public void registerRoomType(String type, int initialCount) {
-        inventory.put(type, initialCount);
-    }
+    /**
+     * Finds and displays only the rooms that have a count > 0.
+     */
+    public void searchAvailableRooms() {
+        System.out.println("\n--- Searching for Available Rooms ---");
+        boolean found = false;
 
-    // Controlled update: Reduce count when a booking happens
-    public boolean bookRoom(String type) {
-        if (inventory.containsKey(type) && inventory.get(type) > 0) {
-            inventory.put(type, inventory.get(type) - 1);
-            return true;
+        // Iterate through the inventory to find available types
+        for (String type : inventory.getAllRoomTypes()) {
+            int count = inventory.getAvailableCount(type);
+
+            if (count > 0) {
+                Room details = roomTemplates.get(type);
+                System.out.println("-> " + type + " | Price: $" + details.pricePerNight +
+                        " | Left: " + count + " | " + details.getAvailabilityStatus());
+                found = true;
+            }
         }
-        return false;
-    }
 
-    // Display current state
-    public void displayInventory() {
-        System.out.println("--- Current Room Inventory Status ---");
-        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
-            System.out.println("Room: " + entry.getKey() + " | Available: " + entry.getValue());
+        if (!found) {
+            System.out.println("Sorry, no rooms are currently available.");
         }
-        System.out.println("-------------------------------------");
     }
 }
